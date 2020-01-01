@@ -32,7 +32,7 @@ dogs-vs-cats-redux-kernels-edition
     pic here
     
     二、创建模型
-    定义混合模型类FusionNet，该类包含预训练模型ResNet50和Inception_v3，因为预训练的参数已经很好，我们只finetune，冻结fully connected layer之前所有的layer，关闭Inception_v3的辅助分支，在两个模型之后添加自定义的fully connected layer：classifier=nn.Linear(4096,2)。这里有一个trick，因为pytorch无法下载不包含fc层的预训练模型，我自定义了一个继承nn.Module的类FC(其实这个类什么也干)，用于替换ResNet50和Inception_v3的fc层。
+    定义混合模型类FusionNet，该类包含预训练模型ResNet50和Inception_v3，因为预训练的参数已经很好，我们只finetune最后的一层分类器(classifier)，冻结fully connected layer之前所有的layer，关闭Inception_v3的辅助分支，在ResNet50和Inception_v3两个模型之后添加自定义的fully connected layer：classifier=nn.Linear(4096,2)。这里有一个小trick，因为pytorch无法下载不包含fc层的预训练模型，我自定义了一个继承nn.Module的类FC(其实这个类什么也干)，用于替换ResNet50和Inception_v3的fc层。
     因为kaggle使用binary cross entropy作为评分函数，我们用torch.nn.CrossEntropyLoss()作为损失函数，以保证预测loss和kaggle一致
     优化器使用随机梯度下降，人为控制学习率。
     optimizer=torch.optim.SGD(model.classifier.parameters(),lr=0.001,momentum=0.92)
