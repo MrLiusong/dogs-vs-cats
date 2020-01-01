@@ -13,13 +13,13 @@ dogs-vs-cats-redux-kernels-edition
 拿到训练集肉眼粗略看了一下，发现训练集存在一些这样的照片
 
 非猫狗图片  
-![](picture/dog.4367.jpg)
+![image](picture/dog.4367.jpg)
 
 背景复杂，人比狗多  
-![](picture/dog.6725.jpg)
+![image](picture/dog.6725.jpg)
 
 巨大白边  
-![](picture/dog.9076.jpg)
+![image](picture/dog.9076.jpg)
 
 一些背景复杂、猫狗占比过小、分辨率过小，或者根本就不是猫狗的图片混杂在训练集中。为防止模型学习到垃圾数据，需要先进行数据清洗，排除训练集异常值。
     
