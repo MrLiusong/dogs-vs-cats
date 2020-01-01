@@ -1,17 +1,23 @@
 # dogs-vs-cats
 dogs-vs-cats-redux-kernels-edition
 
-本项目使用迁移学习的方式创建CNN模型来完成Kaggle的dogs-vs-cats比赛项目，该项目向我们提供了25000张带标签的猫狗照片作为训练集，以及12500张无标签猫狗照片作为测试集，通过训练一个猫狗分类模型，来预测这12500张无标签图。  
+本项目是Kaggle上的一个图片分类项目Dogs vs. Cats，项目要解决的问题是一个计算机视觉领域的图像分类问题。该项目向我们提供了25000张带标签的猫狗照片作为训练集，以及12500张无标签猫狗照片作为测试集，通过训练一个猫狗分类模型，来预测这12500张无标签图是狗的概率。  
+
+kaggle使用交叉熵损失loss值作为评估指标，值越小说明模型拟合的分布约接近真实分布，模型表现越好。交叉熵损失函数公式定义如下：  
+![](picture/equation.svg)
 
 主要思路：  
-使用pytorch、cv2、PIL等第三方库来实现这个分类模型。采用ResNet50和Inception_v3预训练模型作为特征提取器，合并两个模型的特征输出，用于训练一个全连接层。  
-    
+使用pytorch、cv2、PIL等第三方库，使用迁移学习的方式创建CNN模型，实现图片分类。  
+采用ResNet50和Inception_v3预训练模型作为特征提取器，合并两个模型的输出特征，输入全连接层进行图片分类。  
+
+
+
 一、数据预处理  
 
 1、识别图片标签，整理成(path,label)的格式。  
 
 2、数据清洗  
-拿到训练集肉眼粗略看了一下，发现训练集存在一些这样的照片  
+拿到训练集肉眼粗略看了一下，发现训练集存在一些这样的照片：  
 
 非猫狗图片  
 ![image](picture/dog.4367.jpg)
@@ -43,7 +49,7 @@ dogs-vs-cats-redux-kernels-edition
     
 二、创建模型  
 1、建模  
-定义混合模型类FusionNet，该类包含预训练模型ResNet50和Inception_v3，因为预训练的参数已经很好，我们只进行finetune，冻结fully connected layer之前所有的layer，关闭Inception_v3的辅助分支，在ResNet50和Inception_v3两个模型之后添加自定义的fully connected layer：classifier=nn.Linear(4096,2)。这里有一个小trick，因为pytorch无法下载不包含fc层的预训练模型，我自定义了一个继承nn.Module的类FC(仅仅是为了包装成nn.Module子类)，用于替换ResNet50和Inception_v3的fc层。  
+定义混合模型类FusionNet，该类包含预训练CNN模型ResNet50和Inception_v3，因为预训练的参数已经很好，我们只进行finetune，冻结fully connected layer之前所有layer的参数，关闭Inception_v3的辅助分支，在ResNet50和Inception_v3两个模型之后添加自定义的fully connected layer：classifier=nn.Linear(4096,2)。这里有一个小trick，因为pytorch无法下载不包含fc层的预训练模型，我自定义了一个继承nn.Module的类FC(仅仅是为了包装成nn.Module子类)，用于替换ResNet50和Inception_v3的fc层。  
 2、损失函数  
 因为kaggle使用binary cross entropy作为评分函数，我们选择torch.nn.CrossEntropyLoss()作为损失函数，以保证预测loss和kaggle一致  
 3、优化器  
