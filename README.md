@@ -11,15 +11,23 @@ dogs-vs-cats-redux-kernels-edition
 
 2、数据清洗
 拿到训练集肉眼粗略看了一下，发现训练集存在一些这样的照片
-![](picture/dog.6725.jpg)
-![](picture/dog.9076.jpg)
+
+非猫狗图片  
 ![](picture/dog.4367.jpg)
+
+背景复杂，人比狗多  
+![](picture/dog.6725.jpg)
+
+巨大白边  
+![](picture/dog.9076.jpg)
+
 一些背景复杂、猫狗占比过小、分辨率过小，或者根本就不是猫狗的图片混杂在训练集中。为防止模型学习到垃圾数据，需要先进行数据清洗，排除训练集异常值。
     
-1、定义一个图片过滤器image_filter，该函数有两个功能：
+1、定义一个图片过滤器image_filter()，该函数有两个功能：
 去除白边。巨大的白色边缘会导致裁剪时无法剪到完整的猫狗图片；
 过滤掉像素小于12544的图片，过小的图片无法很好的表现一只猫狗。
-        
+
+
 调用image_filter函数，将清洗后的训练集放入新文件夹./dataset/train_sets。
 完成后剩下24803张图片，这个训练集足够大，可以忽略损失的197张图。
     
@@ -27,8 +35,8 @@ dogs-vs-cats-redux-kernels-edition
 为保证模型能够均衡学习到猫狗特征，我们将使用数量相等的猫狗图片作为训练集，猫狗各9921张，一共占原始训练集的80%，剩下4961张作为验证集。
     
 第二步，数据变换。
-使用torchvision的transforms.Compose()来组合图片变换函数，考虑到图片要分别输入两个模型，且两个模型要求的输入尺寸不一致(ResNet50：3*224*224，Inception_v3：3*299*299)，为保证输入的是同一张图的不同尺寸，变换组合中没有使用随机元素，只是用了CenterCrop。
-使用torch.utils.data.DataLoader()装载图片，我自己写了batch转换函数batch_transform，输入batch路径，输出batch Tensor(batch, Channel, width, height)
+使用torchvision的transforms.Compose()来组合图片变换函数，考虑到图片要分别输入两个模型，且两个模型要求的输入尺寸不一致(ResNet50：3*224*224，Inception_v3：3*299*299)，为保证输入的是同一张图的不同尺寸，变换组合中没有使用随机元素，只是用了CenterCrop。  
+使用torch.utils.data.DataLoader()装载图片，我自己写了batch转换函数batch_transform，输入batch路径，输出batch Tensor:(batch, Channel, width, height)
 转化后的图片如下：
     pic here
     
