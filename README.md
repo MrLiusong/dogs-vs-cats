@@ -21,7 +21,7 @@ kaggle使用交叉熵loss值作为评估指标，值越小说明模型拟合的�
 非猫狗图片  
 ![image](picture/dog.4367.jpg)
 
-背景复杂，人比狗多  
+人比狗多  
 ![image](picture/dog.6725.jpg)
 
 巨大白边  
@@ -31,40 +31,46 @@ kaggle使用交叉熵loss值作为评估指标，值越小说明模型拟合的�
     
 1、定义图片过滤器image_filter()，该函数有两个功能：  
 ①去除白边。巨大的白色边缘会导致裁剪时无法剪到完整的猫狗图片；  
-②过滤掉像素小于12544的图片，过小的图片无法很好的表现一只猫狗。  
+②过滤掉像素小于12544的图片。过小的图片无法很好的表现一只猫狗。  
 
 
-调用image_filter函数，将清洗后的训练集放入新文件夹./dataset/train_sets。  
-清洗后剩下24803张图片，这个训练集足够大，损失197张图没有什么影响。  
+将清洗后的训练集放入新文件夹./dataset/train_sets。剩下24803张图片，这个训练集足够大，损失197张图影响不大。  
 
-**以上是第一次数据清洗
+*这是第一次数据清洗
 
-2、分割训练集和验证集  
+3、分割训练集和验证集  
 为保证模型能够均衡学习猫狗特征，我们使用数量相等的猫狗图片来训练，猫和狗各9921张，共占原始训练集的80%，剩下4961张作为验证集。  
     
-第二步，数据变换。  
-使用torchvision的transforms.Compose()来组合图片变换函数，考虑到图片要分别输入两个模型，且两个模型要求的输入尺寸不一致(ResNet50：3*224*224，Inception_v3：3*299*299)，为保证输入的是同一张图的不同尺寸，变换组合中没有使用随机元素，只是用了CenterCrop。  
-使用torch.utils.data.DataLoader()装载图片，我自己写了batch转换函数batch_transform，输入batch路径，输出batch Tensor:(batch, Channel, width, height)  
-转化后的图片如下：  
-    pic here
-    
+4、图片变换  
+使用torchvision的transforms.Compose( )来组合图片变换函数。图片要分别输入两个模型，但两个模型要求的输入尺寸不一致(ResNet50：3*224*224，Inception_v3：3*299*299)，为保证输入的是同一张图，变换组合中没有使用随机元素，只是用了CenterCrop，这样裁剪出来的将是同一张图的不同尺寸。  
+
+转化后的图片展示如下：  
+![image](picture/samples.png)  
+
+使用torch.utils.data.DataLoader()装载图片，我自己写了批次转换函数batch_transform，输入batch路径，输出batch Tensor:(batch, Channel, width, height)  
+
 **二、创建模型  
 
 1、模型  
-定义混合模型类FusionNet，该类包含预训练CNN模型ResNet50和Inception_v3，因为预训练的参数已经很好，我们只进行finetune，冻结fully connected layer之前所有layer的参数，关闭Inception_v3的辅助分支，在ResNet50和Inception_v3两个模型之后添加自定义的fully connected layer：classifier=nn.Linear(4096,2)。这里有一个小trick，因为pytorch无法下载不包含fc层的预训练模型，我自定义了一个继承nn.Module的类FC(仅仅是为了包装成nn.Module子类)，用于替换ResNet50和Inception_v3的fc层。  
+定义混合模型类FusionNet，该类包含预训练CNN模型ResNet50和Inception_v3，因为预训练的参数已经很好，我们只进行finetune。  
+冻结fully connected layer之前所有layer的参数，关闭Inception_v3的辅助分支，在ResNet50和Inception_v3两个模型之后添加自定义的fully connected layer：classifier=nn.Linear(4096,2)。这里有一个小trick，因为pytorch无法下载不包含fc层的预训练模型，我自定义了一个继承nn.Module的类FC(仅仅是为了包装成nn.Module子类)，用于替换ResNet50和Inception_v3的fc层。 
+
 2、损失函数  
-因为kaggle使用binary cross entropy作为评分函数(实际是计算loss)，我们选择torch.nn.CrossEntropyLoss()作为损失函数，以保证预测loss和kaggle一致  
+因为kaggle使用binary cross entropy作为评分函数(实际是计算loss)，我们选择torch.nn.CrossEntropyLoss()作为损失函数，以保证预测loss和kaggle一致。  
+
 3、优化器  
-优化函数使用随机梯度下降算法，人为控制学习率，只更新全连接层的参数。  
+优化函数使用随机梯度下降算法，只更新全连接层的参数，策略控制学习率。  
 optimizer=torch.optim.SGD(model.classifier.parameters(),lr=0.001,momentum=0.92)  
 
 **三、训练模型  
 
-训练过程中记录训练集和验证集的loss、accuracy，以便观察模型是否过拟合。
+训练过程中记录训练集和验证集的loss、accuracy，以便观察模型是否过拟合。  
 
-1、先用带杂质的训练集训练两轮epoch，由于训练集大部分数据仍属于正常值(正常的猫狗图片)，此时模型已学到相当量的猫狗特征，准确率达。
-2、再用该训练集做一次预测，只计算loss，loss>0.43的样本预测概率不超过65%，十有八九是异常值，应该被清除，留下loss<=0.43的样本。  
-**以上是第二次数据清洗  
+1、先用带杂质的训练集训练模型两个epoch，因为训练集大部分数据属于正常的猫狗图片，模型此时已学到相当量的猫狗特征达。  
+![image](picture/plot.png)  
+
+2、用训练过的模型对训练集做一次预测，只计算loss，loss>0.43的样本预测概率不超过65%，十有八九是异常值，应该被清除，留下loss<=0.43的样本。  
+**这是第二次数据清洗  
 
 3、使用第二次清洗过后的训练集重新训练新的模型(模型初始化)，在第?个epoch，模型准确率达到98%？？，平均loss：？？
 
