@@ -78,11 +78,11 @@ scheduler=torch.optim.lr_scheduler.StepLR(optimizer,step_size=1,gamma=0.1)
 
 ### 1、先用带杂质的训练集训练模型  
 因为训练集97%以上都是正常图片，异常只占很小一部分。  
-![image](picture/plot.png)  
+![image](picture/first train.png)  
 
 ### 2、用训练过的模型预测每一个训练样本的loss，清除loss大于阈值的样本。  
 经过两轮epoch训练，模型准确率已达97%，学到的特征偏向于占绝对优势的正常图片，而此时loss仍然大于0.3567（预测概率不超过70%）的样本，十有八九是异常值：非猫狗图片、像素模糊、颜色深暗、背景复杂、角度刁钻，或者一张图同时存在猫和狗 (**这是我肉眼观察时所没有发现的**)。  
-![image](picture/plot2.png)  
+![image](picture/outlier6.png)  
 
 ### 3、使用清洗过的训练集重新训练初始模型  
 对于深度学习网络来说，前面的层学习到的特征泛化能力较强，越往后面的层，越专注于原始数据，所以这里我们打开子网络(ResNet50和Inception_v3)最后一层的参数训练，以拟合我们现在所要学习的数据集。  
@@ -96,7 +96,7 @@ optimizer=torch.optim.SGD(
                           lr=init_lr,momentum=0.91)  
 			  
 - **评价指标如下：**  
-![image](picture/plot2.png)  
+![image](picture/second train.png)  
 
 # Ⅳ.预测  
 
