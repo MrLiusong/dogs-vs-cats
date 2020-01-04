@@ -41,6 +41,7 @@
 我定义了一个图片过滤器：  
 def image_filter(path):  
 (***源码见Notebook***)  
+
 **功能：**  
 - 去除白边。巨大的白色边缘会导致裁剪时无法剪到完整的猫狗图片；  
 - 过滤掉像素小于3600的图片。剩下24973张图。  
@@ -85,7 +86,7 @@ classifier=nn.Sequential(nn.BatchNorm1d(4096),
 
 ### 3、优化器  
 - 使用随机梯度下降(SGD)优化算法：  
-optimizer=torch.optim.SGD(model.classifier.parameters( ),lr=0.001,momentum=0.92)  
+optimizer=torch.optim.SGD(model.classifier.parameters( ),lr=0.001,momentum=0.91)  
 （*第一次尝试训练只训练全连接层的参数*）  
 
 - 用lr_scheduler控制学习率  
