@@ -61,29 +61,41 @@ label：根据文件名判断出来的标签。
 ### 1、定义网络  
 定义混合模型类FusionNet，该类包含预训练CNN模型：**ResNet50**和**Inception_v3**，因为预训练的参数已经很好，我们只对模型finetune。  
 根据情况冻结模型前面几层参数，关闭Inception_v3的辅助分支，融合ResNet50和Inception_v3的特征，在其后添加自定义的fully connected layer。  
-(*这里有一个小trick，因为pytorch无法下载不带fc层的模型，我自定义了一个nn.Module的子类FC，用于替换ResNet50和Inception_v3的fc层。*)  
 
 ### 2、损失函数  
 原题使用***binary cross entropy loss***作为评分函数，我们选择torch.nn.CrossEntropyLoss( )作为损失函数，loss计算方式将与原题一致。  
 
 ### 3、优化器  
-- 使用随机梯度下降(SGD)算法优化
-- 第一次尝试训练只更新全连接层的参数  
+- 使用随机梯度下降(SGD)算法优化  
+
+- 第一次尝试训练只训练全连接层的参数  
 optimizer=torch.optim.SGD(model.classifier.parameters( ),lr=0.001,momentum=0.92)  
+
 - 用lr_scheduler控制学习率  
+scheduler=torch.optim.lr_scheduler.StepLR(optimizer,step_size=1,gamma=0.1)  
 
 # Ⅲ.训练模型  
 
 ### 1、先用带杂质的训练集训练模型  
-因为训练集97%以上都是正常图片，异常的只占很小一部分。  
+因为训练集97%以上都是正常图片，异常只占很小一部分。  
 ![image](picture/plot.png)  
 
 ### 2、用训练过的模型预测每一个训练样本的loss，清除loss大于阈值的样本。  
-经过两轮epoch训练，模型准确率已达97%，学到的特征偏向于占绝对优势的正常图片，而此时loss仍然大于0.3567（预测概率不超过70%）的样本，十有八九是异常值：非猫狗图片、像素模糊、颜色深暗、背景复杂、角度刁钻，或者一张图同时存在猫和狗(这是我肉眼观察时所没有发现的)。  
+经过两轮epoch训练，模型准确率已达97%，学到的特征偏向于占绝对优势的正常图片，而此时loss仍然大于0.3567（预测概率不超过70%）的样本，十有八九是异常值：非猫狗图片、像素模糊、颜色深暗、背景复杂、角度刁钻，或者一张图同时存在猫和狗 (**这是我肉眼观察时所没有发现的**)。  
 ![image](picture/plot2.png)  
 
 ### 3、使用清洗过的训练集重新训练初始模型  
-此处我打开了子网络(ResNet50和Inception_v3)最后一层的参数训练
+对于深度学习网络来说，前面的层学习到的特征泛化能力较强，越往后面的层，越专注于原始数据，所以这里我们打开子网络(ResNet50和Inception_v3)最后一层的参数训练，以拟合我们现在所要学习的数据集。  
+
+optimizer=torch.optim.SGD(  
+[{'params':model.classifier.parameters()},  
+                           {'params':model.resnet.layer4.parameters(),'lr':init_lr*0.1},  
+                           {'params':model.inception.Mixed_7c.parameters(),'lr':init_lr*0.1},  
+                           {'params':model.inception.Mixed_7b.parameters(),'lr':init_lr*0.1},  
+                           {'params':model.inception.Mixed_7a.parameters(),'lr':init_lr*0.1}],  
+                          lr=init_lr,momentum=0.91)  
+			  
+- **评价指标如下：**  
 ![image](picture/plot2.png)  
 
 # Ⅳ.预测  
@@ -91,7 +103,7 @@ optimizer=torch.optim.SGD(model.classifier.parameters( ),lr=0.001,momentum=0.92)
 - 用训练好的模型预测测试集，对输出使用Softmax函数，得到维度(batch,2)的Tensor，第二列(索引[:,1])便是图片为狗的概率。  
 
 - 结果：
-上传kaggle计算评分，最后获得XXX的成绩
+上传至kaggle计算评分，最后获得XXX的成绩
     
 # Ⅴ.对本项目的思考  
 
